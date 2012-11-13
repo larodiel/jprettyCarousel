@@ -1,6 +1,11 @@
 (function($){
 	var scroll = false;
+	Navigation.prototype = new Animation();
+	var nav = new Navigation();
+	var nav_events = nav.events;
+
 	$.fn.jprettyCarousel = function(options) {
+
 		var slideDefaults = {
 			visibleItens: 5,
 			callback: function(){},
@@ -8,53 +13,53 @@
 			next: "",
 			prev: ""
 		};
-		var ie8 = ($.browser.msie && $.browser.version == "8.0");
-		var ie7 = ($.browser.msie && $.browser.version == "7.0");
+		settings = $.extend(slideDefaults,options);
+		var slide_index = 0;
 
-		var settings = $.extend(slideDefaults,options);
 		if(settings.percentRate > 1) {
 				alert("O parâmetro 'percentRate' deve ser menor que 1");
 				return false;
 		}
 		$(this).each(function(index, element) {
 			
-			setSlideIndex(0);
+			slide_index = 0;
 
-			var curIndex = getSlideIndex();
-            var $stage = $(this);
-			var $itens = $(this).children();
-			var $itensQtd = $itens.length; 
-			var $itemWidth = $itens.outerWidth(true);
-			var $itemHeight = $itens.height();
-			var visibleItens = settings.visibleItens;
-			var pageQtd = Math.ceil($itensQtd/visibleItens);
-			var wrapWidth = parseInt($itemWidth * visibleItens);
+			curIndex = slide_index;
+            var stage = $(this);
+            var itens = $(this).children();
+            item = {
+            	qnt: $(this).children().length,
+            	w: itens.outerWidth(true),
+            	h: itens.height(),
+            	visibles: settings.visibleItens
+            }
+			var pageQtd = Math.ceil(item.qnt/item.visibles);
+			var wrapWidth = Math.round(item.w * item.visibles);
 					
-			$stage.css({
+			stage.css({
 				position: "absolute", 
-				width: ($itemWidth*$itensQtd) ,
-				left: -getSlideIndex()*$itemWidth
+				width: (item.w*item.qnt) ,
+				left: -slide_index*item.w
 			}); 
 			
 			//cria um container para a galeria
-			if(!$stage.parent().hasClass('slideWrap')) {
-				$stage.wrap("<div class='slideWrap' style='position:relative;'></div>");
+			if(!stage.parent().hasClass('slideWrap')) {
+				stage.wrap("<div class='slideWrap' style='position:relative;'></div>");
+				var slideWrap = stage.parent();
+				var pag_container = slideWrap.parent();
 			}
-			
-			var slideWrap = $stage.parent();
 			
 			//adiciona o estilo do container
 			slideWrap.css({
 				"overflow":"hidden",
-				"min-height":$itemHeight,
+				"min-height":item.h,
 				width: wrapWidth
 			});
-			var teste =":)";
 			
 			//adiciona a mevegacao na galeria
-			if($itensQtd > settings.visibleItens) {
-				if(slideWrap.has('.slideNavigation').length < 1) {
-					slideWrap.append("<div class='slideNavigation slidePrev'></div><div class='slideNavigation slideNext'></div>");
+			if(item.qnt > item.visibles) {
+				if(slideWrap.find('.slideNavigation').length < 1) {
+					slideWrap.append("<div class='slideNavigation slidePrev' data-nav='prev'></div><div class='slideNavigation slideNext' data-nav='next'></div>");
 				}
 			}
 			else {
@@ -64,12 +69,13 @@
 			//adiciona o estilo a navegacao
 			$(".slideNavigation").css({
 				"position":"absolute",
-				"min-height":$itemHeight,
+				"min-height":item.h,
 				"min-width":40,
 				"cursor":"pointer",
 				zIndex: 80
 			});
 
+			//correct absolute opacity bug
 			if($.browser.msie) {
 				$(".slideNavigation").css({ "background-color":"#fff",opacity:0 });
 			}
@@ -80,65 +86,51 @@
 			
 			//PAGINACAO
 			if(pageQtd > 1) {
-				slidePagination(pageQtd, slideWrap.parent());
-				slideWrap.parent().find(".slide-pagination li").on("click",function(){
-					slideWrap.parent().find(".slide-pagination li").removeClass("active");
+				nav.pagination(pageQtd, pag_container);
+
+				pag_container.find(".slide-pagination li").on("click",function(){
+					pag_container.find(".slide-pagination li").removeClass("active");
 					$(this).addClass("active");
 					
-					curIndex = $(this).data("slideindex")*visibleItens;	
-					updateslideAnim($stage,curIndex,$itemWidth,1);
-					setSlideIndex(curIndex);
+					curIndex = $(this).data("slideindex")*item.visibles;	
+					Animation.updateSlide(stage,curIndex,item.w,1);
+					slide_index = curIndex;
 					
 				});
 			}
 			else {
-				slidePagination(0, slideWrap.parent());
+				nav.pagination(0, pag_container);
 			}
 			
 			slideWrap.find(".slideNavigation").on("mouseenter mouseleave click",function(e){
+				var nav_data = $(this).data("nav");
+
 				if(e.type === "mouseenter") {
 					if(scroll) return false;
-					if($(this).hasClass("slideNext")){						
-						if(curIndex+visibleItens+1 <= $itensQtd) {
-							var move = -(curIndex*$itemWidth)-($itemWidth*settings.percentRate);//($itemWidth/2);
-							slideAnimation($stage,move,0.5);
-						}						
-					}
-					else if($(this).hasClass("slidePrev")) {
-						if(curIndex-visibleItens>=0) {
-							var move = -(curIndex*$itemWidth)+($itemWidth*settings.percentRate);
-							slideAnimation($stage,move,0.5);
-						}
+					switch(nav_data){
+						case "next":
+							nav_events.overNext();
+						break;
+						case "prev":
+							nav_events.overPrev();
+						break;
 					}
 				}
+
 				if(e.type === "mouseleave") {
-					if(!scroll) {
-						updateslideAnim($stage, curIndex, $itemWidth,0.3);
-					}
+					nav_events.mouseOut();
 				}
+
 				if(e.type === "click") {
-					if($(this).hasClass("slideNext")){					
-						if(curIndex+visibleItens+1 >= $itensQtd) {
-							curIndex = $itensQtd-visibleItens;
-						}
-						else {
-							curIndex+=visibleItens;
-						}
-						scroll = true;
+					switch(nav_data){
+						case "next":
+							nav_events.clickNext();
+						break;
+
+						case "prev":
+							nav_events.clickPrev();
+						break;
 					}
-					else if($(this).hasClass("slidePrev")) {
-						if(curIndex-visibleItens< 0) {
-							curIndex = 0;
-						}
-						else {
-							curIndex-=visibleItens;
-						}
-						scroll = true;
-					}
-					
-					updateslideAnim($stage,curIndex, $itemWidth,0.7);
-					setCurPag(pageQtd,curIndex,visibleItens,slideWrap.parent());
-					setSlideIndex(curIndex);
 				}
 			}); //FIM DOS EVENTOS
 			
@@ -149,31 +141,16 @@
 
 					switch(e.type) {
 						case "mouseenter":
-							if(scroll) return false;
-							if(curIndex+visibleItens+1 <= $itensQtd) {
-								var move = -(curIndex*$itemWidth)-($itemWidth*settings.percentRate);
-								slideAnimation($stage,move,0.5);
-							}
+							nav_events.overNext()
 						break;
 
 						case "mouseleave":
-							if(!scroll) {
-								updateslideAnim($stage, curIndex, $itemWidth,0.3);
-							}
+							nav_events.mouseOut()
 						break;
 
 						case "click":
 							e.preventDefault();
-							if(curIndex+visibleItens+1 >= $itensQtd) {
-								curIndex = $itensQtd-visibleItens;
-							}
-							else {
-								curIndex+=visibleItens;
-							}
-							scroll = true;
-							updateslideAnim($stage,curIndex, $itemWidth,0.7);
-							setCurPag(pageQtd,curIndex,visibleItens,slideWrap.parent());
-							setSlideIndex(curIndex);
+							nav_events.clickNext();
 						break;
 					}
 					
@@ -186,30 +163,30 @@
 				$(settings.prev).on("mouseenter mouseleave click",function(e){
 					switch(e.type) {
 						case "mouseenter":
-							if(curIndex-visibleItens>=0) {
-								var move = -(curIndex*$itemWidth)+($itemWidth*settings.percentRate);
-								slideAnimation($stage,move,0.5);
+							if(curIndex-item.visibles>=0) {
+								var move = -(curIndex*item.w)+(item.w*settings.percentRate);
+								Animation.slide(stage,move,0.5);
 							}
 						break;
 
 						case "mouseleave":
 							if(!scroll) {
-								updateslideAnim($stage, curIndex, $itemWidth,0.3);
+								Animation.updateSlide(stage, curIndex, item.w,0.3);
 							}
 						break;
 
 						case "click":
 							e.preventDefault();
-							if(curIndex-visibleItens< 0) {
+							if(curIndex-item.visibles< 0) {
 								curIndex = 0;
 							}
 							else {
-								curIndex-=visibleItens;
+								curIndex-=item.visibles;
 							}
 							scroll = true;
-							updateslideAnim($stage,curIndex, $itemWidth,0.7);
-							setCurPag(pageQtd,curIndex,visibleItens,slideWrap.parent());
-							setSlideIndex(curIndex);
+							Animation.updateSlide(stage,curIndex, item.w,0.7);
+							Navigation.cur_page(pageQtd,curIndex,item.visibles,pag_container);
+							slide_index = curIndex;
 						break;
 					}
 					
@@ -227,9 +204,9 @@
 			}
 		});
 	};
-
 	//FUNCOES
-	function slideAnimation(selector,move,time){
+function Animation() {
+	this.slide = function(selector,move,time){
 		selector.stop().animate({
 			left: move
 		},{
@@ -240,18 +217,62 @@
 			}
 		});
 	}
-	
-	function updateslideAnim(selector, index, width,time) {
+	this.updateSlide = function(selector, index, width,time) {
 		var time = time || 2;
-		slideAnimation(selector, -(index*width), time);
+		this.slide(selector, -(index*width), time);
 	}
-	
-	function cssParseInt(val) {
-		var val = val.split("px")[0];
-		return Number(val);
+}
+ 
+function Navigation(){
+	var that = this;
+
+	this.events = {
+		overNext : function(){
+			if(scroll) return false;
+			if(curIndex+item.visibles+1 <= item.qnt) {
+				var move = -(curIndex*item.w)-(item.w*settings.percentRate);//(item.w/2);
+				that.slide(stage,move,0.5);
+			}
+		},
+		overPrev : function() {
+			if(curIndex-item.visibles>=0) {
+				var move = -(curIndex*item.w)+(item.w*settings.percentRate);
+				that.slide(stage,move,0.5);
+			}
+		},
+		mouseOut : function(){
+			if(!scroll) {
+				that.updateSlide(stage, curIndex, item.w,0.3);
+			}
+		},
+		clickFunctions : function(){
+			that.updateSlide(stage,curIndex, item.w,0.7);
+			that.cur_page(pageQtd,curIndex,item.visibles,pag_container);
+			slide_index = curIndex;
+		},
+		clickNext : function(){
+			if(curIndex+item.visibles+1 >= item.qnt) {
+				curIndex = item.qnt-item.visibles;
+			}
+			else {
+				curIndex+=item.visibles;
+			}
+			scroll = true;
+			that.clickFunctions();
+		},
+		clickPrev : function() {
+			if(curIndex-item.visibles< 0) {
+				curIndex = 0;
+			}
+			else {
+				curIndex-=item.visibles;
+			}
+			scroll = true;
+			that.clickFunctions();
+		}
 	}
-	
-	function slidePagination(pageQtd,selector){
+
+	this.pagination= function(pageQtd,selector){
 		if(pageQtd > 0) {
 			var li_itens ="";
 
@@ -271,20 +292,13 @@
 			$(selector).find('.slide-pagination').html("");
 		}
 	}
-	
-	function setCurPag(pageQtd,slideIndex,visibleItens,selector) {
+
+	this.cur_page= function(pageQtd,slideIndex,visibleItens,selector){
 		if(pageQtd>0) {
 			$(selector).find(".slide-pagination li").removeClass("active");
 			$(selector).find(".slide-pagination li").eq(slideIndex/visibleItens).addClass("active");
 		}
-		
 	}
-	
-	function setSlideIndex(index) {
-		this.slideIndex = index;
-	}
-	
-	function getSlideIndex() {
-		return this.slideIndex;
-	}
+}
+
 })(jQuery);
