@@ -1,29 +1,28 @@
-jPrettyCarousel
-=========
+<h1 id="jprettycarousel">jPrettyCarousel</h1>
 
-A pretty carousel plugin to use with jquery 1.7+ 
+<p>A pretty carousel plugin to use with jquery 1.7+ </p>
 
-Version
--
+<h2 id="version">Version</h2>
 
-1.0
+<p>1.1</p>
 
-Installation
---------------
+<h2 id="installation">Installation</h2>
 
-1. add plugin on the head of your page
-2. call the carousel method with quantity of visible items 
-`$("my_container").jprettyCarousel({ visibleItens:5 })`
-3. set some optional parameter, the possibles parameters is 
->- percentRate(integer) how much of next or prev item,the  slide can show on next or prev mouseup
->- callback(function)--this object returns the item object
->- prev(string) -- selector of previous ex: "#my_custom_button"
->- next(string)
+<ol>
+<li>add plugin on the head of your page</li>
+<li>call the carousel method with quantity of visible items 
+<code>$("my_container").jprettyCarousel({ visibleItens:5 })</code></li>
+<li>set some optional parameter, the possibles parameters is:
+<ul> 
+<li> percentRate(integer) how much of next or prev item,the  slide can show on next or prev mouseup</li>
+<li> callback(function)--this object returns the item object</li>
+<li> prev(string) -- selector of previous ex: <code>"#my_custom_button"</code></li>
+<li> next(string)</li>
+</ul>
+</ol>
 
+<h2 id="license">License</h2>
 
-License
--
+<p>MIT</p>
 
-MIT
-
-*Free Software*
+<p><em>Free Software</em></p>

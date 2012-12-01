@@ -8,9 +8,7 @@
 			margin:0;
 			padding:0;
 		}
-		ul {
-			list-style-type: none;
-		}
+		ul { list-style-type: none; }
 		#carousel_wrap {
 			overflow: hidden;
 		}
@@ -21,6 +19,22 @@
 		#carousel_wrap li img {
 			display: block;
 		}
+
+		.slide-pagination {
+			float: left;
+            text-align: center;
+            overflow: hidden;
+		}
+		.slide-pagination li { display: inline-block; }
+    		.slide-pagination li > a {
+    			width: 100%;
+    			text-decoration: none;
+    			color:#000;
+                font-size: 23px;
+                margin-right: 5px;
+    		}
+            .slide-pagination li.active > a,
+            .slide-pagination li.active > a:hover { color: red; } 
 	</style>
 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
 	<script src="media/js/jprettyCarousel.1.0.js"></script>
