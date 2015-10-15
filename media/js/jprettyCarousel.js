@@ -1,6 +1,6 @@
 (function($){
 	var scroll = false;
-	
+
 
 	$.fn.jprettyCarousel = function(options) {
 		var animation = new Animation();
@@ -28,10 +28,10 @@
 				return false;
 		}
 		$(this).each(function(index, element) {
-			
-			slide_index = 0;
 
-			curIndex = slide_index;
+			slide_index = 0;
+			current_index = slide_index;
+
             stage = $(this);
             var itens = $(this).children();
             item = {
@@ -42,27 +42,27 @@
             }
 			pageQtd = Math.ceil(item.qnt/item.visibles);
 			var wrapWidth = Math.round(item.w * item.visibles);
-					
+
 			stage.css({
-				position: "absolute", 
+				position: "absolute",
 				width: (item.w*item.qnt) ,
 				left: -slide_index*item.w
-			}); 
-			
+			});
+
 			//cria um container para a galeria
 			if(!stage.parent().hasClass('slideWrap')) {
 				stage.wrap("<div class='slideWrap' style='position:relative;'></div>");
 				var slideWrap = stage.parent();
 				pag_container = slideWrap.parent();
 			}
-			
+
 			//adiciona o estilo do container
 			slideWrap.css({
 				"overflow":"hidden",
 				"min-height":item.h,
 				width: wrapWidth
 			});
-			
+
 			//adiciona a mevegacao na galeria
 			if(item.qnt > item.visibles) {
 				if(slideWrap.find('.slideNavigation').length < 1) {
@@ -72,7 +72,7 @@
 			else {
 				slideWrap.find(".slideNavigation").remove();
 			}
-			
+
 			//adiciona o estilo a navegacao
 			$(".slideNavigation").css({
 				"position":"absolute",
@@ -86,11 +86,11 @@
 			if($.browser.msie) {
 				$(".slideNavigation").css({ "background-color":"#fff",opacity:0 });
 			}
-			
+
 			$(".slideNext").css("right",0);
 			$(".slidePrev").css("left",0);
-			
-			
+
+
 			//PAGINACAO
 			if(pageQtd > 1) {
 				nav.pagination(pageQtd, pag_container);
@@ -98,17 +98,17 @@
 				pag_container.find(".slide-pagination li").on("click",function(){
 					pag_container.find(".slide-pagination li").removeClass("active");
 					$(this).addClass("active");
-					
-					curIndex = $(this).data("slideindex")*item.visibles;	
+
+					curIndex = $(this).data("slideindex")*item.visibles;
 					animation.updateSlide(stage,curIndex,item.w,1);
 					slide_index = curIndex;
-					
+
 				});
 			}
 			else {
 				nav.pagination(0, pag_container);
 			}
-			
+
 			slideWrap.find(".slideNavigation").on("mouseenter mouseleave click",function(e){
 				var nav_data = $(this).data("nav");
 
@@ -140,7 +140,7 @@
 					}
 				}
 			}); //FIM DOS EVENTOS
-			
+
 
 			if(settings.next != "") {
 				$(settings.next).off("mouseenter mouseleave click");
@@ -160,9 +160,9 @@
 							nav_events.clickNext();
 						break;
 					}
-					
-				});					
-										
+
+				});
+
 			}
 
 			if(settings.prev != "") {
@@ -196,17 +196,17 @@
 							slide_index = curIndex;
 						break;
 					}
-					
-				});					
-										
+
+				});
+
 			}
 			//CLICK CALLBACK
-			if(typeof(settings.callback) == "function") { 
+			if(typeof(settings.callback) == "function") {
 				settings.callback.apply($(this));
 			}
-			else { 
+			else {
 				settings.callback = function(){
-					
+
 				};
 			}
 		});
@@ -229,7 +229,7 @@
 					this.slide(selector, -(index*width), time);
 				}
 			}
-			 
+
 			function Navigation(){
 				var that = this;
 

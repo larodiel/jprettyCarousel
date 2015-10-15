@@ -34,23 +34,25 @@
                 margin-right: 5px;
     		}
             .slide-pagination li.active > a,
-            .slide-pagination li.active > a:hover { color: red; } 
+            .slide-pagination li.active > a:hover { color: red; }
 	</style>
-	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
-	<script src="media/js/jprettyCarousel.1.0.js"></script>
-	
-	<script>
-		$(window).load(function(){
-			$("#carousel_wrap").jprettyCarousel({
-				visibleItens:1
-			});
-		});
-	</script>
+	<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
+
+
 </head>
 <body>
 	<ul id="carousel_wrap">
-		<li><img src="media/img/jprettyCarousel_img1.jpg" alt="" width="200" heigh="180" /></li>
-		<li><img src="media/img/jprettyCarousel_img2.jpg" alt="" width="200" heigh="180" /></li>
+		<li><img src="http://placehold.it/200x180" alt="" width="200" heigh="180" /></li>
+		<li><img src="http://placehold.it/200x180" alt="" width="200" heigh="180" /></li>
 	</ul>
+
+    <script>
+        $(window).load(function(){
+            $("#carousel_wrap").jprettyCarousel({
+                visibleItens:1
+            });
+        });
+    </script>
+    <script src="dist/js/jprettyCarousel.js"></script>
 </body>
 </html>
