@@ -4,19 +4,27 @@
 
     Plugin = (element, options) ->
         @stage = @element = element
-        @stage = $(@stage)
+        @stage =
+            el: $(@stage)
+            width: $(@stage).outerWidth(true)
+            left: @getCssInt $(@stage).css "left"
 
+        @slide_wrap =
+            el:  @stage.el.parent()
+            width: @stage.el.parent().outerWidth(true)
 
         @options    = $.extend({}, defaults, options)
         @_defaults  = defaults
         @_name      = pluginName
-        @nav        = new Navigation
-        @galleryLayout ''
         @init()
-
 
     pluginName = "jprettyCarousel"
     css_class_prefix = "jpretty"
+
+    current_index = 0
+    slide_index = 0
+    page_qnt = 0
+    pag_container = "";
 
     defaults =
         visible_items: 5
@@ -25,77 +33,79 @@
         next: ""
         prev: ""
 
-    Navigation = ->
-
     Plugin:: =
         init: ->
             if @options.percent_rate > 1
                 console.error "'percent_rate' have to be less than 1";
                 return false;
 
-            @current_index = 0
-            @slide_index = 0
-            @page_qnt = 0
-            @pag_container = ""
+            @galleryLayout ''
+            pag_container = pag_container || @slide_wrap.el;
 
             _this = @
-            $this = @stage
+            $this = @stage.el
             items = $this.children()
             slide_index = 0;
             current_index = slide_index;
 
             images_width_sum = @itemsWidthSum(items)
 
-            item =
+            @item =
                 qnt: @getItemsQnt(items)
                 w: items.outerWidth true
                 h: items.outerHeight true
-                visibles: @visibleItemsLimit(@stage, items) || @options.visible_items
+                visibles: @options.visible_items || @visibleItemsLimit(@stage.el, items)
 
+            page_qnt = Math.ceil(@getItemsQnt(items)/@item.visibles);
+            wrap_width = Math.round(@item.w * @item.visibles);
 
-            page_qnt = Math.ceil(@getItemsQnt(items)/item.visibles);
-            wrap_width = Math.round(item.w * item.visibles);
+            @setStagewidth(@item.w*@item.qnt)
+
+            @stage.el.css {
+                position: "absolute"
+                width: (@itemBiggest(items)*@item.qnt)
+                left: -slide_index*@itemBiggest(items)
+            }
 
             #Pagination
             if page_qnt > 1
-                @nav.pagination page_qnt, @pag_container
 
-                @pag_container.find(@setClass 'pagination'+" li").on "click", ->
-                    @pag_container.find(@setClass 'pagination'+" li").removeClass("active");
+                @pagination page_qnt, pag_container
+
+                pag_container.find(@setClass 'pagination').children().on "click", ->
+                    pag_container.find(@setClass 'pagination').children().removeClass("active");
                     $(this).addClass("active");
 
-                    @current_index = $(this).data("slideindex")*item.visibles;
-                    @nav.updateSlide stage, @current_index, item.w, 1
-                    @slide_index = @current_index;
+                    current_index = $(this).data("slideindex")*@item.visibles;
+                    @updateSlide stage, current_index, @item.w, 1
+                    slide_index = current_index;
 
             else
-                @nav.pagination(0, @pag_container);
+                @pagination 0, pag_container
 
             #Events
-            @stage.on "mouseenter mouseleave click", [@options.next, @options.prev, @setClass 'navigation' ] ,(e)->
-                nav_data = $(this).data "nav"
-                target = $(e.target)
+            $([@options.next, @options.prev].join(',')).on "mouseenter mouseleave click", (e)->
+                nav_data = $(this).data "jprettynav"
 
-                switch e.type
-                    when "mouseenter"
-                        if scroll
-                            return false
+                if e.type == "mouseenter"
+                    if scroll
+                        return false
 
-                        if nav_data == "next"
-                            _this.nav.overNext()
-                        else if nav_data == "prev"
-                             _this.nav.overPrev()
+                    if nav_data == "next"
+                        _this.overNext()
+                    else if nav_data == "prev"
+                         _this.overPrev()
 
-                    when "mouseleave"
-                        _this.nav.mouseOut()
+                else if e.type == "mouseleave"
+                    _this.mouseOut()
 
-                    when "click"
-                        if nav_data == "next"
-                            _this.nav.clickNext();
-                        else if nav_data == "prev"
-                            _this.nav.clickPrev();
+                else if e.type == "click"
+                    if nav_data == "next"
+                        _this.clickNext()
+                    else if nav_data == "prev"
+                        _this.clickPrev()
 
-
+            return
 
         itemsWidthSum: (children) ->
             sum = 0
@@ -106,8 +116,16 @@
             )
             sum
 
-        visibleItemsLimit: (wrap, items) ->
+        itemBiggest: (children) ->
+            max = []
+            children.find('img').each((idx,el)->
 
+              max.push $(el).outerWidth true
+
+            )
+            Math.max.apply '', max
+
+        visibleItemsLimit: (wrap, items) ->
             sum = @itemsWidthSum(items);
             Math.ceil wrap.outerWidth(true)/ sum
 
@@ -116,49 +134,96 @@
 
         galleryLayout: ->
             #Gallery Container
-            if !@stage.parent().hasClass(css_class_prefix+'-wrap')
-                @stage.wrap "<div class="+css_class_prefix+"-wrap style='position:relative;'></div>"
-                @slide_wrap = @pag_container = @stage.parent().parent();
+            if !@stage.el.parent().hasClass(css_class_prefix+'-wrap')
+                @stage.el.wrap "<div class="+css_class_prefix+"-wrap style='position:relative;'></div>"
+                @slide_wrap.el = pag_container = @stage.el.parent();
             true
 
         setClass: (css_class) ->
             ['.',css_class_prefix,'-',css_class].join('')
 
-    Navigation:: =
-
         overNext: ->
             if scroll
                 return false
-            if curIndex+item.visibles+1 <= item.qnt
-                move = -(curIndex*item.w)-(item.w*settings.percentRate)
+            if current_index+@item.visibles+1 <= @item.qnt
+                move = -(current_index*@item.w)-(@item.w*settings.percentRate)
                 @moveSlide stage,move
 
         overPrev: ->
-            if curIndex-item.visibles>=0
-                move = -(curIndex*item.w)+(item.w*settings.percentRate)
+            if current_index-@item.visibles>=0
+                move = -(current_index*@item.w)+(@item.w*settings.percentRate)
                 @slide(stage,move,0.5);
 
         mouseOut: ->
-
-
-        clickFunctions: ->
+            if !scroll
+              @updateSlide stage, current_index, @item.w, 0.3
+            return
 
         clickNext: ->
 
+            to_move_next = ( Math.abs( @stage.left ) + @slide_wrap.width ) - @stage.width
+            to_move_next = if  Math.abs(to_move_next) >= @slide_wrap.width then -@slide_wrap.width + @stage.left else @stage.left+to_move_next
+            @setStageLeft(to_move_next)
+            @setCurrentPage to_move_next, @slide_wrap.width
+            @moveSlide to_move_next, current_index
+            return
+
         clickPrev: ->
+            if current_index == 1 or @stage.left == 0
+                return false
+
+            to_move = if @stage.left % @slide_wrap.width != 0 then @stage.left + Math.abs(@stage.left % @slide_wrap.width) else @stage.left + @slide_wrap.width
+            to_move = if Math.abs(to_move) >= @slide_wrap.width and @stage.left % @slide_wrap.width == 0 then @stage.left + @slide_wrap.width else to_move
+
+            @setStageLeft(to_move)
+            @setCurrentPage to_move, @slide_wrap.width
+            @moveSlide to_move, current_index
+            return
 
         pagination: (pageQtd,selector) ->
 
+            if pageQtd > 0
+                li_itens = ""
+
+                i = 0
+                while i < pageQtd
+                  active_class = if i == 0 then 'active' else ''
+                  li_itens += '<span class="'+css_class_prefix+'-pagination-item '+ css_class_prefix+'-page-'+i+' '+active_class + '" data-slideindex=\'' + i + '\'><a href=\'javascript:\'><i>&bull;</i></a></span>'
+                  i++
+
+                $(selector).find('.'+css_class_prefix+'-navigation').html li_itens
+
+            else
+                $(selector).find('.'+css_class_prefix+'-navigation').html ""
+
         cur_page: (pageQtd,slideIndex,visibleItens,selector) ->
+            if pageQtd > 0
+                $(selector).find('.slide-pagination li').removeClass 'active'
+                $(selector).find('.slide-pagination li').eq(slideIndex / visibleItens).addClass 'active'
 
-        moveSlide: (move) ->
-            selector.css {
-                left: move
-            }
+        moveSlide: (to_move, cur_page, onComplete) ->
 
-        updateSlide: (selector, index, width,time)->
-            @moveSlide selector, -(index*width)
+            onComplete = onComplete || ->
 
+            @stage.el.css({
+                "left": to_move
+            }).data("current_page", cur_page);
+            return
+
+        setCurrentPage: (cur_left, wrapsize)->
+            current_page = Math.ceil( Math.abs(cur_left) /wrapsize)+1;
+
+        getCarouselLeft: () ->
+            @getCssInt @stage.el.css "left"
+
+        getCssInt: (str) ->
+            Number(str.replace(/[a-z-A-Z]+$|\%$/g,""))
+
+        setStagewidth: (w)->
+            @stage.width = w
+
+        setStageLeft: (l) ->
+            @stage.left = l
 
     $.fn[pluginName] = (options) ->
         @each ->

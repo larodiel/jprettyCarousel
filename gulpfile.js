@@ -3,11 +3,12 @@ var gulp         = require('gulp'),
     sourcemaps   = require('gulp-sourcemaps'),
     gutil        = require('gulp-util'),
     watch        = require('gulp-watch'),
+    path         = require('path'),
     pkg          = require('./package.json');
 
 //var coffee_compiler =
 
-gulp.task("coffee-compiler", function(){
+gulp.task("coffee", function(){
 
     gulp.src(pkg.paths.assets+'/coffee/**/*.coffee')
       .pipe(sourcemaps.init())
@@ -19,5 +20,6 @@ gulp.task("coffee-compiler", function(){
 
 
 gulp.task('watch', function(){
-    watch('assets/**/*.coffee', ['coffee-compiler']);
+    console.log(path.join(__dirname,'/assets/*.coffee'));
+    gulp.watch(pkg.paths.assets+'/coffee/**/*.coffee', ['coffee']);
 });

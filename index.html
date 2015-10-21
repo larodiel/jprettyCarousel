@@ -8,6 +8,11 @@
 			margin:0;
 			padding:0;
 		}
+
+        .jpretty-wrap {
+            max-width: 200px
+        }
+
 		ul { list-style-type: none; }
 		#carousel_wrap {
 			overflow: hidden;
@@ -19,6 +24,11 @@
 		#carousel_wrap li img {
 			display: block;
 		}
+
+        .jpretty-navigation {
+            bottom:0;
+            position: absolute;
+        }
 
 		.slide-pagination {
 			float: left;
@@ -35,21 +45,38 @@
     		}
             .slide-pagination li.active > a,
             .slide-pagination li.active > a:hover { color: red; }
+
+        .jpretty-wrap {
+            min-height: 200px;
+            overflow: hidden;
+            position: relative;
+        }
 	</style>
 	<script src="http://code.jquery.com/jquery-1.11.3.min.js"></script>
 
 
 </head>
 <body>
-	<ul id="carousel_wrap">
-		<li><img src="http://placehold.it/200x180" alt="" width="200" heigh="180" /></li>
-		<li><img src="http://placehold.it/200x180" alt="" width="200" heigh="180" /></li>
-	</ul>
 
+    <div class="jpretty-wrap">
+
+    	<ul id="carousel_wrap">
+    		<li><img src="http://placehold.it/200x180/003366/ffffff" alt="" width="200" heigh="180" /></li>
+    		<li><img src="http://placehold.it/200x180" alt="" width="200" heigh="180" /></li>
+    	</ul>
+
+        <div class="jpretty-navigation"></div>
+
+    </div>
+
+    <a class="prev" data-jprettynav="prev">PREV</a>
+    <a class="next" data-jprettynav="next">NEXT</a>
     <script>
         $(window).load(function(){
             $("#carousel_wrap").jprettyCarousel({
-                visibleItens:1
+                visible_items:1,
+                next: ".next",
+                prev: ".prev"
             });
         });
     </script>

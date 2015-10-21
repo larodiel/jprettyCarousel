@@ -30,7 +30,7 @@
 		$(this).each(function(index, element) {
 
 			slide_index = 0;
-			current_index = slide_index;
+			current_index = slide_index
 
             stage = $(this);
             var itens = $(this).children();
@@ -87,8 +87,8 @@
 				$(".slideNavigation").css({ "background-color":"#fff",opacity:0 });
 			}
 
-			$(".slideNext").css("right",0);
-			$(".slidePrev").css("left",0);
+			$(".slideNext").css("right",0)
+			$(".slidePrev").css("left",0)
 
 
 			//PAGINACAO
