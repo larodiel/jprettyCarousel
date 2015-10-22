@@ -4,6 +4,9 @@ var gulp         = require('gulp'),
     gutil        = require('gulp-util'),
     watch        = require('gulp-watch'),
     path         = require('path'),
+    rename       = require('gulp-rename'),
+    uglify       = require('gulp-uglify'),
+    sass         = require('gulp-sass'),
     pkg          = require('./package.json');
 
 //var coffee_compiler =
@@ -15,11 +18,30 @@ gulp.task("coffee", function(){
       .pipe(coffee({ bare: true })).on('error', gutil.log)
       .pipe(sourcemaps.write('./'))
       .pipe(gulp.dest(pkg.paths.dist+'/js'));
+});
 
+gulp.task("compress", function(){
+  gulp.src(pkg.paths.dist+'/js/*.js')
+    .pipe(uglify())
+    .pipe(gulp.dest(pkg.paths.dist+'/js'))
+    .pipe(rename({suffix: '.min'}));
 });
 
 
+
+gulp.task("sass", function(){
+
+  gulp.src(pkg.paths.assets+'/sass/**/*.scss')
+    .pipe(sourcemaps.init())
+    .pipe(sass({outputStyle: 'compressed'}))
+    .pipe(sourcemaps.write())
+    .pipe(gulp.dest(pkg.paths.dist+'/css'))
+    .pipe(rename({suffix: '.min'}));
+
+});
+
 gulp.task('watch', function(){
-    console.log(path.join(__dirname,'/assets/*.coffee'));
     gulp.watch(pkg.paths.assets+'/coffee/**/*.coffee', ['coffee']);
+
+    gulp.watch(pkg.paths.assets+'/sass/**/*.scss', ['sass']);
 });

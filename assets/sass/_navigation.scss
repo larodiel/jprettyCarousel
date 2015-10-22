@@ -1,0 +1,15 @@
+.jpretty-navigation {
+    bottom:0;
+    position: absolute;
+
+    .jpretty-pagination-item {
+        a {
+            font-size: 1.5rem;
+            text-decoration: none;
+        }
+
+        i {
+            vertical-align: middle;
+        }
+    }
+}

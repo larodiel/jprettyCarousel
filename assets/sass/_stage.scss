@@ -1,0 +1,14 @@
+//Stage
+    .jpretty-stage {
+        font-size: 0;
+        left: 0;
+        position: absolute;
+        transition:left ease-in $animation-interval;
+        white-space: nowrap;
+        width: 100%;
+
+        > * {
+            display: inline-block;
+        }
+
+    }

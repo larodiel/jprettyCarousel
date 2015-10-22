@@ -1,30 +1,34 @@
 (($, window, document) ->
 
-
-
     Plugin = (element, options) ->
         @stage = @element = element
-        @stage =
-            el: $(@stage)
-            width: $(@stage).outerWidth(true)
-            left: @getCssInt $(@stage).css "left"
-
-        @slide_wrap =
-            el:  @stage.el.parent()
-            width: @stage.el.parent().outerWidth(true)
 
         @options    = $.extend({}, defaults, options)
         @_defaults  = defaults
         @_name      = pluginName
-        @init()
+
+        @stage =
+            el: $(@stage)
+            width: @itemBiggest( $(@stage) ) * $(@stage).children().length
+            left: @getCssInt $(@stage).css "left"
+
+        @slide_wrap =
+            el:  @stage.el.parent()
+            width: @itemBiggest( @stage.el ) * @options.visible_items
+
+        @preloadImages( @stage.el.find('img').toArray() )
+            .done =>
+                @init()
+            return
+
+
 
     pluginName = "jprettyCarousel"
     css_class_prefix = "jpretty"
 
-    current_index = 0
     slide_index = 0
-    page_qnt = 0
-    pag_container = "";
+    pag_container = ""
+    scroll = false
 
     defaults =
         visible_items: 5
@@ -35,20 +39,25 @@
 
     Plugin:: =
         init: ->
-            if @options.percent_rate > 1
-                console.error "'percent_rate' have to be less than 1";
+            if @options.percent_rate > 1 || @options.percent_rate < 0
+                console.error "'percent_rate' have to be less than 1 and greater than 0";
                 return false;
 
-            @galleryLayout ''
+            @galleryLayout()
             pag_container = pag_container || @slide_wrap.el;
 
             _this = @
             $this = @stage.el
             items = $this.children()
+            loaded_images = 0
             slide_index = 0;
-            current_index = slide_index;
+            @current_index = slide_index;
 
             images_width_sum = @itemsWidthSum(items)
+
+            #Add class
+            items.addClass css_class_prefix+"-item"
+            @stage.el.addClass css_class_prefix+"-stage"
 
             @item =
                 qnt: @getItemsQnt(items)
@@ -56,32 +65,29 @@
                 h: items.outerHeight true
                 visibles: @options.visible_items || @visibleItemsLimit(@stage.el, items)
 
-            page_qnt = Math.ceil(@getItemsQnt(items)/@item.visibles);
+            @page_qnt = Math.ceil(@getItemsQnt(items)/@item.visibles);
             wrap_width = Math.round(@item.w * @item.visibles);
+
+            $(@setClass('wrap')).css {
+                'max-width': wrap_width
+            }
+
+            @stage.el.css {
+                width: @itemBiggest(@stage.el) * items.length
+            }
 
             @setStagewidth(@item.w*@item.qnt)
 
-            @stage.el.css {
-                position: "absolute"
-                width: (@itemBiggest(items)*@item.qnt)
-                left: -slide_index*@itemBiggest(items)
-            }
-
             #Pagination
-            if page_qnt > 1
+            if @page_qnt > 1
 
-                @pagination page_qnt, pag_container
-
-                pag_container.find(@setClass 'pagination').children().on "click", ->
-                    pag_container.find(@setClass 'pagination').children().removeClass("active");
-                    $(this).addClass("active");
-
-                    current_index = $(this).data("slideindex")*@item.visibles;
-                    @updateSlide stage, current_index, @item.w, 1
-                    slide_index = current_index;
+                @pagination @page_qnt, @slide_wrap.el
+                @slide_wrap.el.find(@setClass 'pagination-item').on "click", ->
+                    idx = $(this).index()
+                    _this.moveSlide true, _this.slide_wrap.width, idx
 
             else
-                @pagination 0, pag_container
+                @pagination 0, @slide_wrap.el
 
             #Events
             $([@options.next, @options.prev].join(',')).on "mouseenter mouseleave click", (e)->
@@ -137,7 +143,7 @@
             if !@stage.el.parent().hasClass(css_class_prefix+'-wrap')
                 @stage.el.wrap "<div class="+css_class_prefix+"-wrap style='position:relative;'></div>"
                 @slide_wrap.el = pag_container = @stage.el.parent();
-            true
+            return
 
         setClass: (css_class) ->
             ['.',css_class_prefix,'-',css_class].join('')
@@ -145,39 +151,44 @@
         overNext: ->
             if scroll
                 return false
-            if current_index+@item.visibles+1 <= @item.qnt
-                move = -(current_index*@item.w)-(@item.w*settings.percentRate)
-                @moveSlide stage,move
+
+            if @current_index+@item.visibles+1 < @item.qnt
+                move = @stage.left - (@item.w*@options.percent_rate)
+                @moveSlide move,@current_index
 
         overPrev: ->
-            if current_index-@item.visibles>=0
-                move = -(current_index*@item.w)+(@item.w*settings.percentRate)
-                @slide(stage,move,0.5);
+
+            if @item.visibles - @current_index > 0 and @current_index > 1
+                move = @stage.left + (@item.w*@options.percent_rate)
+                @moveSlide move,@current_index
 
         mouseOut: ->
             if !scroll
-              @updateSlide stage, current_index, @item.w, 0.3
+                @moveSlide @stage.left,@current_index
             return
 
         clickNext: ->
 
+            if @current_index == @page_qnt
+                return false
+
             to_move_next = ( Math.abs( @stage.left ) + @slide_wrap.width ) - @stage.width
             to_move_next = if  Math.abs(to_move_next) >= @slide_wrap.width then -@slide_wrap.width + @stage.left else @stage.left+to_move_next
             @setStageLeft(to_move_next)
-            @setCurrentPage to_move_next, @slide_wrap.width
-            @moveSlide to_move_next, current_index
+            @setCurrentIndex to_move_next, @slide_wrap.width
+            @moveSlide to_move_next, @current_index
             return
 
         clickPrev: ->
-            if current_index == 1 or @stage.left == 0
+            if @current_index == 1 or @stage.left == 0
                 return false
 
             to_move = if @stage.left % @slide_wrap.width != 0 then @stage.left + Math.abs(@stage.left % @slide_wrap.width) else @stage.left + @slide_wrap.width
             to_move = if Math.abs(to_move) >= @slide_wrap.width and @stage.left % @slide_wrap.width == 0 then @stage.left + @slide_wrap.width else to_move
 
             @setStageLeft(to_move)
-            @setCurrentPage to_move, @slide_wrap.width
-            @moveSlide to_move, current_index
+            @setCurrentIndex to_move, @slide_wrap.width
+            @moveSlide to_move, @current_index
             return
 
         pagination: (pageQtd,selector) ->
@@ -201,17 +212,26 @@
                 $(selector).find('.slide-pagination li').removeClass 'active'
                 $(selector).find('.slide-pagination li').eq(slideIndex / visibleItens).addClass 'active'
 
-        moveSlide: (to_move, cur_page, onComplete) ->
+        moveSlide: (to_move, cur_page) ->
 
-            onComplete = onComplete || ->
+            __arg_size = arguments.length
+
+            if __arg_size > 2
+                to_move = -(arguments[1]*arguments[2])
 
             @stage.el.css({
                 "left": to_move
             }).data("current_page", cur_page);
+
+            if typeof arguments[__arg_size-1] == "function"
+                arguments[__arg_size-1].call("")
+
             return
 
-        setCurrentPage: (cur_left, wrapsize)->
-            current_page = Math.ceil( Math.abs(cur_left) /wrapsize)+1;
+
+
+        setCurrentIndex: (cur_left, wrapsize)->
+            @current_index = Math.ceil( Math.abs(cur_left) /wrapsize)+1;
 
         getCarouselLeft: () ->
             @getCssInt @stage.el.css "left"
@@ -225,9 +245,40 @@
         setStageLeft: (l) ->
             @stage.left = l
 
+        preloadImages: (srcs) ->
+
+            jQuery.whenArray = ( array ) ->
+                jQuery.when.apply( this, array );
+
+            dfd = $.Deferred()
+            promises = []
+            img
+            l
+            p
+
+            if !$.isArray(srcs)
+                srcs = [srcs]
+
+            l = srcs.length;
+
+            i = 0
+
+            while i < l
+
+                p = $.Deferred()
+                img = $('<img />')
+                img.load p.resolve
+                img.error p.resolve
+                promises.push p
+                img.get(0).src = srcs[i].src
+                ++i
+            $.whenArray(promises).done(dfd.resolve);
+
+            dfd.promise();
+
     $.fn[pluginName] = (options) ->
         @each ->
-            $.data @, "plugin_" + pluginName, new Plugin(@, options)  unless $.data(@, "plugin_" + pluginName)
+            $.data @, pluginName, new Plugin(@, options)  unless $.data(@, "plugin_" + pluginName)
 
     # Prevents CoffeeScript to return a value from plugin wrapper.
     return
